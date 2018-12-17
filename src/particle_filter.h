@@ -9,6 +9,7 @@
 #ifndef PARTICLE_FILTER_H_
 #define PARTICLE_FILTER_H_
 
+#include <random>
 #include "helper_functions.h"
 
 struct Particle {
@@ -37,7 +38,10 @@ class ParticleFilter {
 	
 	// Vector of weights of all particles
 	std::vector<double> weights;
-	
+
+        // Random engine
+        std::default_random_engine r_engine;
+
 public:
 	
 	// Set of current particles
@@ -96,6 +100,9 @@ public:
 	 *   the new set of particles.
 	 */
 	void resample();
+
+        double calc_observation_weight(double x, double y, double min_x, double min_y, double std[]);
+        Map::single_landmark_s find_nearest(double x, double y, const Map &map_landmarks);
 
 	/*
 	 * Set a particles list of associations, along with the associations calculated world x,y coordinates
