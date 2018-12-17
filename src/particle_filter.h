@@ -102,7 +102,7 @@ public:
 	void resample();
 
         double calc_observation_weight(double x, double y, double min_x, double min_y, double std[]);
-        Map::single_landmark_s find_nearest(double x, double y, const Map &map_landmarks);
+        Map::single_landmark_s find_nearest(double x, double y, double sensor_range, const Map &map_landmarks);
 
 	/*
 	 * Set a particles list of associations, along with the associations calculated world x,y coordinates

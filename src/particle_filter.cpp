@@ -21,7 +21,7 @@ using namespace std;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
-  num_particles = 36;
+  num_particles = 128;
 
   normal_distribution<double> dist_x(x, std[0]);
   normal_distribution<double> dist_y(y, std[1]);
@@ -106,7 +106,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       map.y = p.y + (sinTheta * obs.x) + (cosTheta * obs.y);
       predicted.push_back(map);
 
-      Map::single_landmark_s nearest = find_nearest(map.x, map.y, map_landmarks);
+      Map::single_landmark_s nearest = find_nearest(map.x, map.y, sensor_range, map_landmarks);
 
       // Calc particle weight
       p.weight *= calc_observation_weight(map.x, map.y, nearest.x_f, nearest.y_f, std_landmark);
@@ -124,12 +124,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   }
 }
 
-Map::single_landmark_s ParticleFilter::find_nearest(double x, double y, const Map &map_landmarks){
-  double min_dist=51;
+Map::single_landmark_s ParticleFilter::find_nearest(double x, double y, double sensor_range, const Map &map_landmarks){
+  double min_dist=sensor_range+1;
   Map::single_landmark_s nearest;
 
   for(auto lm: map_landmarks.landmark_list){
     double delta_dist = dist(x, y, lm.x_f, lm.y_f);
+    if(delta_dist > sensor_range){
+      continue;
+    }
     if(delta_dist < min_dist) {
       min_dist = delta_dist;
       nearest = lm;
