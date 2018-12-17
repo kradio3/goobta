@@ -14,6 +14,7 @@
 #include <string>
 #include <iterator>
 #include <vector>
+#include "Eigen/Dense"
 
 #include "particle_filter.h"
 
@@ -92,29 +93,38 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   //Accumulate total weight for normalization
   double total_weight = 0;
 
+  //Fill observation matrix
+  Eigen::MatrixXd Obs = Eigen::MatrixXd(3, observations.size());
+  for(unsigned int j =0; j<observations.size(); j++){
+    LandmarkObs obs = observations[j];
+    Obs(0, j) = obs.x;
+    Obs(1, j) = obs.y;
+    Obs(2, j) = 1;
+  }
+
+  //Fill transformation matrix and transform
   for(unsigned int i=0; i<num_particles; i++) {
     Particle p = particles[i];
-    const float cosTheta = cos(p.theta);
-    const float sinTheta = sin(p.theta);
-    vector<LandmarkObs>::const_iterator it = observations.begin();
+    double cosTheta = cos(p.theta);
+    double sinTheta = sin(p.theta);
+    Eigen::MatrixXd Tr = Eigen::MatrixXd(3,3);
+    Tr  << cosTheta, -sinTheta, p.x,
+        /**/sinTheta, cosTheta, p.y,
+        /**/0, 0, 1;
 
-    vector<LandmarkObs> predicted;
+    //Transform to map origin
+    Eigen::MatrixXd M = Tr * Obs;
 
-    for(auto obs:observations){
-      LandmarkObs map;
-      map.x = p.x + (cosTheta * obs.x) - (sinTheta * obs.y);
-      map.y = p.y + (sinTheta * obs.x) + (cosTheta * obs.y);
-      predicted.push_back(map);
-
-      Map::single_landmark_s nearest = find_nearest(map.x, map.y, sensor_range, map_landmarks);
-
+    for(unsigned int j=0; j<M.cols(); j++) {
+      // Find nearest
+      Map::single_landmark_s nearest = find_nearest(M(0, j), M(1, j), sensor_range, map_landmarks);
       // Calc particle weight
-      p.weight *= calc_observation_weight(map.x, map.y, nearest.x_f, nearest.y_f, std_landmark);
+      p.weight *= calc_observation_weight(M(0, j), M(1, j), nearest.x_f, nearest.y_f, std_landmark);
     }
-
     particles[i] = p;
     total_weight += p.weight;
   }
+
 
   //Normalize
   for(unsigned int i=0; i<num_particles; i++) {
